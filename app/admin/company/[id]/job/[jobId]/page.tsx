@@ -7,6 +7,7 @@ import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/fi
 
 export default function JobDetails({ params }: { params: { id: string; jobId: string } }) {
   const router = useRouter();
+  const unwrappedParams = React.use(params);
   const [jobDetails, setJobDetails] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,8 +17,8 @@ export default function JobDetails({ params }: { params: { id: string; jobId: st
     const fetchJobAndApplications = async () => {
       try {
         // Get job details
-        const companyRef = doc(db, 'companies', params.id);
-        const jobRef = doc(collection(companyRef, 'jobs'), params.jobId);
+        const companyRef = doc(db, 'companies', unwrappedParams.id);
+        const jobRef = doc(collection(companyRef, 'jobs'), unwrappedParams.jobId);
         const jobDoc = await getDoc(jobRef);
 
         if (!jobDoc.exists()) {
@@ -53,7 +54,7 @@ export default function JobDetails({ params }: { params: { id: string; jobId: st
     };
 
     fetchJobAndApplications();
-  }, [params.id, params.jobId]);
+  }, [unwrappedParams.id, unwrappedParams.jobId]);
 
   if (loading) {
     return (
