@@ -7,18 +7,19 @@ import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/fi
 
 export default function JobDetails({ params }: { params: { id: string; jobId: string } }) {
   const router = useRouter();
-  const unwrappedParams = React.use(params);
   const [jobDetails, setJobDetails] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let unsubscribe: () => void;
+
     const fetchJobAndApplications = async () => {
       try {
         // Get job details
-        const companyRef = doc(db, 'companies', unwrappedParams.id);
-        const jobRef = doc(collection(companyRef, 'jobs'), unwrappedParams.jobId);
+        const companyRef = doc(db, 'companies', params.id);
+        const jobRef = doc(collection(companyRef, 'jobs'), params.jobId);
         const jobDoc = await getDoc(jobRef);
 
         if (!jobDoc.exists()) {
@@ -36,7 +37,7 @@ export default function JobDetails({ params }: { params: { id: string; jobId: st
         const applicationsRef = collection(jobRef, 'applications');
         const applicationsQuery = query(applicationsRef, orderBy('submittedAt', 'desc'));
         
-        const unsubscribe = onSnapshot(applicationsQuery, (snapshot) => {
+        unsubscribe = onSnapshot(applicationsQuery, (snapshot) => {
           const applicationsData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -44,8 +45,6 @@ export default function JobDetails({ params }: { params: { id: string; jobId: st
           setApplications(applicationsData);
           setLoading(false);
         });
-
-        return () => unsubscribe();
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Failed to load job details and applications');
@@ -54,7 +53,13 @@ export default function JobDetails({ params }: { params: { id: string; jobId: st
     };
 
     fetchJobAndApplications();
-  }, [unwrappedParams.id, unwrappedParams.jobId]);
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [params.id, params.jobId])
 
   if (loading) {
     return (

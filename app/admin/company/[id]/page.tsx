@@ -8,7 +8,7 @@ import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, deleteDoc 
 
 export default function CompanyDetails({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const unwrappedParams = React.use(params);
+  // Remove the React.use() call and directly use params
   const [companyName, setCompanyName] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jobPost, setJobPost] = useState({
@@ -31,7 +31,7 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchCompanyDetails = async () => {
       try {
-        const companyDoc = await getDoc(doc(db, 'companies', unwrappedParams.id));
+        const companyDoc = await getDoc(doc(db, 'companies', params.id));
         if (companyDoc.exists()) {
           setCompanyName(companyDoc.data().name);
           
@@ -58,12 +58,12 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
     };
 
     fetchCompanyDetails();
-  }, [unwrappedParams.id, router]);
+  }, [params.id, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const companyRef = doc(db, 'companies', unwrappedParams.id);
+      const companyRef = doc(db, 'companies', params.id);
       await addDoc(collection(companyRef, 'jobs'), {
         ...jobPost,
         createdAt: new Date()
@@ -149,7 +149,7 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
                 <div key={job.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 w-full">
                   <div className="flex justify-between items-center w-full">
                     <button
-                      onClick={() => router.push(`/admin/company/${unwrappedParams.id}/job/${job.id}`)}
+                      onClick={() => router.push(`/admin/company/${params.id}/job/${job.id}`)}
                       className="text-left font-medium text-gray-900 hover:text-[#6f8aff] transition-colors flex-grow"
                     >
                       {job.title}
@@ -164,7 +164,7 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
                       <button
                         onClick={() => {
                           if (window.confirm('Are you sure you want to delete this job post? This action cannot be undone.')) {
-                            const companyRef = doc(db, 'companies', unwrappedParams.id);
+                            const companyRef = doc(db, 'companies', params.id);
                             const jobRef = doc(collection(companyRef, 'jobs'), job.id);
                             deleteDoc(jobRef);
                           }
