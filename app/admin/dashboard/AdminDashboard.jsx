@@ -1,21 +1,21 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../../utils/firebase';
 import { signOut } from 'firebase/auth';
 import { collection, addDoc, onSnapshot, query, deleteDoc, doc } from 'firebase/firestore';
 
 export default function Dashboard() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [companyName, setCompanyName] = useState('');
-  const [companies, setCompanies] = useState<{id: string, name: string}[]>([]);
+  const [companies, setCompanies] = useState([]);
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.push('/admin');
+      navigate('/admin');
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -34,7 +34,7 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await addDoc(collection(db, 'companies'), {
@@ -99,7 +99,7 @@ export default function Dashboard() {
                 <div key={company.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 w-full">
                   <div className="flex justify-between items-center w-full">
                     <button 
-                      onClick={() => router.push(`/admin/company/${company.id}`)}
+                      onClick={() => navigate(`/admin/company/${company.id}`)}
                       className="text-left font-medium text-gray-900 hover:text-[#6f8aff] transition-colors flex-grow"
                     >
                       {company.name}

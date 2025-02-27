@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { auth, db } from '../../../utils/firebase';
+import { useNavigate, useParams } from 'react-router-dom';
+import { auth, db } from '../../utils/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, deleteDoc } from 'firebase/firestore';
 
-export default function CompanyDetails({ params }: { params: { id: string } }) {
-  const router = useRouter();
-  // Remove the React.use() call and directly use params
+export default function CompanyDetails() {
+  const navigate = useNavigate();
+  const { id } = useParams();
   const [companyName, setCompanyName] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jobPost, setJobPost] = useState({
@@ -16,13 +16,13 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
     description: '',
     salary: ''
   });
-  const [jobs, setJobs] = useState<{id: string, title: string}[]>([]);
-  const [copyStatus, setCopyStatus] = useState<{ id: string, status: string } | null>(null);
+  const [jobs, setJobs] = useState([]);
+  const [copyStatus, setCopyStatus] = useState(null);
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.push('/admin');
+      navigate('/admin');
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -31,7 +31,7 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchCompanyDetails = async () => {
       try {
-        const companyDoc = await getDoc(doc(db, 'companies', params.id));
+        const companyDoc = await getDoc(doc(db, 'companies', id));
         if (companyDoc.exists()) {
           setCompanyName(companyDoc.data().name);
           
@@ -49,21 +49,21 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
           return () => unsubscribe();
         } else {
           console.error('Company not found');
-          router.push('/admin/dashboard');
+          navigate('/admin/dashboard');
         }
       } catch (error) {
         console.error('Error fetching company details:', error);
-        router.push('/admin/dashboard');
+        navigate('/admin/dashboard');
       }
     };
 
     fetchCompanyDetails();
-  }, [params.id, router]);
+  }, [id, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const companyRef = doc(db, 'companies', params.id);
+      const companyRef = doc(db, 'companies', id);
       await addDoc(collection(companyRef, 'jobs'), {
         ...jobPost,
         createdAt: new Date()
@@ -80,7 +80,7 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setJobPost(prev => ({
       ...prev,
@@ -88,7 +88,7 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
     }));
   };
 
-  const handleCopyLink = async (jobId: string) => {
+  const handleCopyLink = async (jobId) => {
     const link = `${window.location.origin}/apply/${jobId}`;
     try {
       await navigator.clipboard.writeText(link);
@@ -149,7 +149,7 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
                 <div key={job.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 w-full">
                   <div className="flex justify-between items-center w-full">
                     <button
-                      onClick={() => router.push(`/admin/company/${params.id}/job/${job.id}`)}
+                      onClick={() => navigate(`/admin/company/${id}/job/${job.id}`)}
                       className="text-left font-medium text-gray-900 hover:text-[#6f8aff] transition-colors flex-grow"
                     >
                       {job.title}
@@ -164,7 +164,7 @@ export default function CompanyDetails({ params }: { params: { id: string } }) {
                       <button
                         onClick={() => {
                           if (window.confirm('Are you sure you want to delete this job post? This action cannot be undone.')) {
-                            const companyRef = doc(db, 'companies', params.id);
+                            const companyRef = doc(db, 'companies', id);
                             const jobRef = doc(collection(companyRef, 'jobs'), job.id);
                             deleteDoc(jobRef);
                           }

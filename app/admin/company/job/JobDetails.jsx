@@ -1,25 +1,26 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { db } from '../../../../../utils/firebase';
+import { useNavigate, useParams } from 'react-router-dom';
+import { db } from '../../../utils/firebase';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 
-export default function JobDetails({ params }: { params: { id: string; jobId: string } }) {
-  const router = useRouter();
-  const [jobDetails, setJobDetails] = useState<any>(null);
-  const [applications, setApplications] = useState<any[]>([]);
+export default function JobDetails() {
+  const navigate = useNavigate();
+  const { id, jobId } = useParams();
+  const [jobDetails, setJobDetails] = useState(null);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    let unsubscribe: () => void;
+    let unsubscribe;
 
     const fetchJobAndApplications = async () => {
       try {
         // Get job details
-        const companyRef = doc(db, 'companies', params.id);
-        const jobRef = doc(collection(companyRef, 'jobs'), params.jobId);
+        const companyRef = doc(db, 'companies', id);
+        const jobRef = doc(collection(companyRef, 'jobs'), jobId);
         const jobDoc = await getDoc(jobRef);
 
         if (!jobDoc.exists()) {
@@ -59,7 +60,7 @@ export default function JobDetails({ params }: { params: { id: string; jobId: st
         unsubscribe();
       }
     };
-  }, [params.id, params.jobId])
+  }, [id, jobId]);
 
   if (loading) {
     return (
@@ -84,7 +85,7 @@ export default function JobDetails({ params }: { params: { id: string; jobId: st
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => router.back()}
+              onClick={() => navigate(-1)}
               className="text-gray-600 hover:text-gray-900 flex items-center"
             >
               <svg

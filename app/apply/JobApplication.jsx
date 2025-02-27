@@ -1,21 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { db } from '../../utils/firebase';
+import { useParams } from 'react-router-dom';
+import { db } from '../utils/firebase';
 import { doc, getDoc, collection, addDoc, getDocs } from 'firebase/firestore';
-import { storage, BUCKET_ID } from '../../utils/appwrite';
+import { storage, BUCKET_ID } from '../utils/appwrite';
 import { ID } from 'appwrite';
 
-export default function JobApplication({ params }: { params: { jobId: string } }) {
-  const [jobDetails, setJobDetails] = useState<any>(null);
+export default function JobApplication() {
+  const { jobId } = useParams();
+  const [jobDetails, setJobDetails] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phoneNumber: ''
   });
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [submitStatus, setSubmitStatus] = useState(null);
 
   useEffect(() => {
     const fetchJobDetails = async () => {
@@ -26,7 +28,7 @@ export default function JobApplication({ params }: { params: { jobId: string } }
         let foundJob = false;
         
         for (const company of companies.docs) {
-          const jobRef = doc(company.ref, 'jobs', params.jobId);
+          const jobRef = doc(company.ref, 'jobs', jobId);
           const job = await getDoc(jobRef);
           if (job.exists()) {
             jobDoc = job;
@@ -56,10 +58,12 @@ export default function JobApplication({ params }: { params: { jobId: string } }
       }
     };
 
-    fetchJobDetails();
-  }, [params.jobId]);
+    if (jobId) {
+      fetchJobDetails();
+    }
+  }, [jobId]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -67,13 +71,13 @@ export default function JobApplication({ params }: { params: { jobId: string } }
     }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus(null);
@@ -84,7 +88,7 @@ export default function JobApplication({ params }: { params: { jobId: string } }
       let jobCompanyRef = null;
       
       for (const company of companies.docs) {
-        const jobRef = doc(company.ref, 'jobs', params.jobId);
+        const jobRef = doc(company.ref, 'jobs', jobId);
         const job = await getDoc(jobRef);
         if (job.exists()) {
           jobCompanyRef = company.ref;
@@ -112,7 +116,7 @@ export default function JobApplication({ params }: { params: { jobId: string } }
       }
 
       // Create application document
-      await addDoc(collection(jobCompanyRef, 'jobs', params.jobId, 'applications'), {
+      await addDoc(collection(jobCompanyRef, 'jobs', jobId, 'applications'), {
         ...formData,
         fileName: file ? file.name : null,
         fileId: fileId,
