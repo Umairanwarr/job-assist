@@ -6,10 +6,12 @@ import { db } from '../utils/firebase';
 import { doc, getDoc, collection, addDoc, getDocs } from 'firebase/firestore';
 import { storage, BUCKET_ID } from '../utils/appwrite';
 import { ID } from 'appwrite';
+import emailjs from '@emailjs/browser';
 
 export default function JobApplication() {
   const { jobId } = useParams();
   const [jobDetails, setJobDetails] = useState(null);
+  const [companyName, setCompanyName] = useState('Job Assist');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -18,6 +20,11 @@ export default function JobApplication() {
   const [file, setFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+  
+  useEffect(() => {
+    // Initialize EmailJS
+    emailjs.init('Io5pWKeMShxgPysuD');
+  }, []);
 
   useEffect(() => {
     const fetchJobDetails = async () => {
@@ -33,6 +40,7 @@ export default function JobApplication() {
           if (job.exists()) {
             jobDoc = job;
             foundJob = true;
+            setCompanyName(company.data().name);
             break;
           }
         }
@@ -92,6 +100,7 @@ export default function JobApplication() {
         const job = await getDoc(jobRef);
         if (job.exists()) {
           jobCompanyRef = company.ref;
+          setCompanyName(company.data().name);
           break;
         }
       }
@@ -123,6 +132,27 @@ export default function JobApplication() {
         fileUrl: fileUrl,
         submittedAt: new Date()
       });
+      
+      // Send confirmation email to applicant
+      try {
+        await emailjs.send(
+          'service_o99k98f',
+          'template_7jdajsh', // New template for job applications
+          {
+            to_email: formData.email,
+            to_name: formData.fullName,
+            job_title: jobDetails?.title || 'the position',
+            company_name: companyName, // Using the dynamically fetched company name
+            application_date: new Date().toLocaleDateString(),
+            from_name: 'Job Assist Team'
+          },
+          'Io5pWKeMShxgPysuD'
+        );
+        console.log('Confirmation email sent successfully');
+      } catch (emailError) {
+        console.error('Error sending confirmation email:', emailError);
+        // Continue with form submission even if email fails
+      }
 
       setFormData({
         fullName: '',
@@ -162,26 +192,52 @@ export default function JobApplication() {
       <nav className="bg-white shadow-sm fixed top-0 w-full z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-center items-center">
-            <h1 className="text-2xl font-bold text-[#6f8aff]">Job Assist</h1>
+            <div className="flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                className="w-6 h-6 text-[#6f8aff] mr-2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+              <span className="text-lg font-medium text-[#6f8aff]">Job Assist</span>
+            </div>
           </div>
         </div>
       </nav>
 
       <div className="min-h-screen bg-gray-50 pt-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white py-8 px-6 shadow rounded-lg h-fit">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Job Details</h2>
-            {jobDetails && (
-              <div>
-                <h3 className="text-xl font-semibold text-gray-800">{jobDetails.title}</h3>
-                <h4 className="mt-3 text-lg font-bold text-gray-700">Job Description</h4>
-                <p className="mt-2 text-gray-600">{jobDetails.description}</p>
-                <p className="mt-4 text-gray-600"><span className="font-bold">Salary:</span> {jobDetails.salary}</p>
-              </div>
-            )}
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center mb-6">
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              Back
+            </button>
           </div>
-
-          <div>
+          <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">Application Form</h2>
             <div className="bg-white py-8 px-6 shadow rounded-lg">
               {submitStatus && (
@@ -192,7 +248,7 @@ export default function JobApplication() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6 text-start">
                 <div>
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
                     Full Name
